@@ -1,0 +1,100 @@
+Plans and notes
+
+
+ANT COLONY - STAGE ONE SIM ONLY
+------------------------------------
+prompt:
+	Spawn X amount of ants
+	they walk around randomly laying out a home trail when they see nothing interesting.
+	if they encounter food they take it, then look for a home trail. and follow the home trail while laying downa food trail
+	
+	once the ant has delivered the food, it starts looking for a food trail if possible, and follows that.
+	if there are competing trails the ant selects the strongest one
+	
+	trails decay over time
+-------------------------------------
+
+ant
+	bIsCaryingFood
+	bIsCenteredOnTile
+	currentLocation (handled by unity or unreal by being a gameobject or actor with a transform)
+	closestGridPosition
+	currentDestination
+	cubeForvisualization
+		
+		Update()
+		{
+			if(bIsCenteredOnTile)
+			{
+				if(bIsCarryingFood)
+				{
+					markTile(pheromoneType, amount);
+					SeekHome();
+				}
+				else
+				{
+					markTile(pheromoneType, amount);
+					SeekFood();
+				}
+			} 
+			else 
+			{
+				moveTowardsDestination(deltatime);
+			}
+			
+		}
+
+		SeekFood()
+		{
+			
+				foodFound = checkNeighborTilesForFood()
+
+				if(foodFound)
+				{
+					foodFound.Take();
+					bIsCarryingFood = true;
+				}
+				else
+				{
+					destination = checkNeighborTilesForPhereomone(food);
+				}
+		}
+
+		SeekHome()
+		{
+			
+				homeFound = checkNeighborTilesForHome()
+
+				if(homeFound)
+				{
+					bIsCarryingFood = false;
+				}
+				else
+				{
+					destination = checkNeighborTilesForPhereomone(home);
+				}
+		}
+
+
+grid
+	list of nodes
+
+node 
+	dictionary of pheromone types to their strengths
+	upperbound position
+	lowerbound position
+	neighbors list
+
+food
+	interactsAvailableB4Despawn
+	sphereForVisualization
+
+homePoint
+	visual representation
+	ant spawner
+
+
+
+
+
+------------------- ant state machine?
