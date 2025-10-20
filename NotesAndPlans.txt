@@ -89,7 +89,7 @@ food
 	interactsAvailableB4Despawn
 	sphereForVisualization
 
-homePoint
+AntHome
 	visual representation
 	ant spawner
 
@@ -97,4 +97,7 @@ homePoint
 
 
 
-------------------- ant state machine?
+------------------- ant goals
+seeking food
+returning home
+fleeing
