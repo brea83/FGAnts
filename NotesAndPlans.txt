@@ -98,6 +98,28 @@ AntHome
 
 
 ------------------- ant goals
-seeking food
-returning home
-fleeing
+Flee				activates if InDanger
+Bring Food to Nest	activates if HasFood and Not IsHungry
+Satisfy Hunger		activates if IsHungry
+Socialize			active if IsLonely
+Explore				
+
+internal state
+	HasFood	   : bool
+	IsHungry   : bool
+	IsLonely   : bool
+	InDanger   : bool
+	IsMoving : bool
+	DestinationTile : tile ref
+
+actions:
+
+Select Next Tile
+requires: none
+costs: none
+Results: set destination tile
+
+move To New Tile 
+requires: Select Next Tile & IsCenteredOnTile
+costs: (tile move cost)
+Results: set IsMoving true until destination reached

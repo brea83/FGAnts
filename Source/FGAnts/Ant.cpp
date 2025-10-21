@@ -25,3 +25,12 @@ void AAnt::Tick(float DeltaTime)
 
 }
 
+void AAnt::SeekFood()
+{}
+
+void AAnt::SeekHome()
+{}
+
+void AAnt::MoveToDestination()
+{}
+
