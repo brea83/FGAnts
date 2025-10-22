@@ -5,6 +5,7 @@
 #include "GridTile.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "DrawDebugHelpers.h"
+#include "AntGameState.h"
 
 AAntGrid::AAntGrid()
 {
@@ -49,7 +50,22 @@ void AAntGrid::InitializeGrid()
 void AAntGrid::BeginPlay()
 {
 	Super::BeginPlay();
+
+	AAntGameState* gameState = Cast<AAntGameState, AGameStateBase>(GetWorld()->GetGameState());
+	if (!gameState) { return; }
+
+	// singleton behavior for now
+	AAntGrid* activeGrid = gameState->GetActiveGrid();
+	if (activeGrid != nullptr && activeGrid != this)
+	{
+		Destroy();
+		return;
+	}
+
 	InitializeGrid();
+	
+	gameState->SetActiveGrid(this);
+
 }
 
 bool AAntGrid::IsTileTraversable(FVector centerPosition)

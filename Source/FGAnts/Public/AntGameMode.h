@@ -3,14 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Engine/UserDefinedEnum.h"
-#include "EFeremoneTypes.generated.h"
+#include "GameFramework/GameModeBase.h"
+#include "AntGameMode.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class FGANTS_API UEFeremoneTypes : public UUserDefinedEnum
+class FGANTS_API AAntGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 	

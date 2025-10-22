@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "PheromoneTypes.h"
 #include "CoreMinimal.h"
 
 /**
@@ -24,7 +25,7 @@ protected:
 	FVector _centerPosition{ 0, 0, 0 };
 	FIntVector2 _coord{ 0, 0 };
 
-	TMap<FName, float> _pheromones;
+	TMap<EPheromoneTypes, float> _pheromones;
 
 public: // functions
 	//virtual void Tick(float DeltaTime);
@@ -34,12 +35,24 @@ public: // functions
 
 	const bool HasPheromones() const { return _bHasPheromones; }
 
-	float GetPheromoneAmount(FName pheromoneName);
+	float GetPheromoneAmount(EPheromoneTypes pheromone);
 
-	void AddPheromoneAmount(FName pheromoneName, float amount);
+	void AddPheromoneAmount(EPheromoneTypes pheromone, float amount);
 
 	void DecayPheromones(float DeltaTime);
 
 	const FIntVector2 GetCoord() const { return _coord; }
+	const FVector GetCenterPosition() const { return _centerPosition; }
 
+	friend bool operator<(const GridTile& left, const GridTile& right)
+	{
+		return left._coord.X < right._coord.X && left._coord.Y < right._coord.Y;
+	}
+
+	friend bool operator> (const GridTile& lhs, const GridTile& rhs) { return rhs < lhs; }
+	friend bool operator<=(const GridTile& lhs, const GridTile& rhs) { return !(lhs > rhs); }
+	friend bool operator>=(const GridTile& lhs, const GridTile& rhs) { return !(lhs < rhs); }
+
+	friend bool operator==(const GridTile& lhs, const GridTile& rhs) { return lhs._coord == rhs._coord; }
+	friend bool operator!=(const GridTile& lhs, const GridTile& rhs) { return !(lhs == rhs); }
 };

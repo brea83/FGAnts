@@ -3,6 +3,7 @@
 
 #include "GridTile.h"
 
+
 GridTile::GridTile()
 {
 }
@@ -17,9 +18,9 @@ GridTile::~GridTile()
 	_pheromones.Empty();
 }
 
-float GridTile::GetPheromoneAmount(FName pheromoneName)
+float GridTile::GetPheromoneAmount(EPheromoneTypes pheromone)
 {
-	float* pheromoneAmount = _pheromones.Find(pheromoneName);
+	float* pheromoneAmount = _pheromones.Find(pheromone);
 
 	if (pheromoneAmount) return *pheromoneAmount;
 
@@ -28,28 +29,28 @@ float GridTile::GetPheromoneAmount(FName pheromoneName)
 	return -1.0f;
 }
 
-void GridTile::AddPheromoneAmount(FName pheromoneName, float amount)
+void GridTile::AddPheromoneAmount(EPheromoneTypes pheromone, float amount)
 {
 	if (amount <= 0) return; // this is not to be used for decrementing pheromone amounts
 
-	float* oldAmount = _pheromones.Find(pheromoneName);
+	float* oldAmount = _pheromones.Find(pheromone);
 
 	if (oldAmount)
 	{
 		amount += *oldAmount;
 	}
 
-	_pheromones.Add(pheromoneName, amount);
+	_pheromones.Add(pheromone, amount);
 	_bHasPheromones = true;
 }
 
 void GridTile::DecayPheromones(float DeltaTime)
 {
 
-	TArray<FName> keys;
+	TArray<EPheromoneTypes> keys;
 	_pheromones.GenerateKeyArray(keys);
 
-	for (FName key : keys)
+	for (EPheromoneTypes key : keys)
 	{
 		float newValue = *_pheromones.Find(key) - DeltaTime;
 
