@@ -6,7 +6,19 @@
 #include "GameFramework/Actor.h"
 #include "AntGrid.generated.h"
 
-class AAntTile;
+class GridTile;
+struct NeighborCoords
+{
+	FIntVector2 N {  0,  1 };
+	FIntVector2 W { -1,  0 };
+	FIntVector2 E {  1,  0 };
+	FIntVector2 S {  0, -1 };
+
+	FIntVector2 NW{ -1,  1 };
+	FIntVector2 NE{  1,  1 };
+	FIntVector2 SW{ -1, -1 };
+	FIntVector2 SE{  1, -1 };
+};
 
 UCLASS()
 class FGANTS_API AAntGrid : public AActor
@@ -23,17 +35,26 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FVector2D TileSize{ 100, 100 };
 
-	TArray<AAntTile*> Tiles;
+	TArray<GridTile*> Tiles;
 
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	bool IsTileTraversable(FVector centerPosition);
+
+	GridTile* GetTileByCoord(FIntVector2 coord);
+
+
+	const NeighborCoords _neighborCoords;
+
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	AAntTile* GetClosestTile(FVector queryPosition);
+	GridTile* GetClosestTile(FVector queryPosition);
+
+	TArray<GridTile*> GetNeighborTiles(GridTile* currentTile);
 	
 };

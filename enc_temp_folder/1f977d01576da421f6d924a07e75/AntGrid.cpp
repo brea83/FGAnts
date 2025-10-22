@@ -29,18 +29,16 @@ void AAntGrid::InitializeGrid()
 			//AAntTile* newTile = GetWorld()->SpawnActor<AAntTile>(spawnLocation, spawnRotation, spawnParams);
 			//newTile->halfWidth = TileSize.X * 0.5;
 			//newTile->halfHeight = TileSize.Y * 0.5;
+			FColor debugColor = FColor::Green;
 			bool bIsTraversable = IsTileTraversable(spawnLocation);
-			if (bIsTraversable)
+			if (!bIsTraversable)
 			{
-				DrawDebugBox(GetWorld(), spawnLocation, FVector(TileSize.X * 0.4, TileSize.Y * 0.4, 2), FColor::Emerald, true, -1, 0, 10);
-			}
-			else
-			{
-				DrawDebugBox(GetWorld(), spawnLocation, FVector(TileSize.X * 0.4, TileSize.Y * 0.4, 2), FColor::Red, true, -1, 0, 10);
+				debugColor = FColor::Red;
 			}
 
 			Tiles.Add(new GridTile(spawnLocation, FIntVector2(x, y), bIsTraversable));
 
+			DrawDebugBox(GetWorld(), GetActorLocation(), FVector(TileSize.X * 0.5, TileSize.Y * 0.5, 5), debugColor, true, -1, 0, 10);
 		}
 
 	}
@@ -58,7 +56,7 @@ bool AAntGrid::IsTileTraversable(FVector centerPosition)
 	FHitResult outHit;
 	FVector start = centerPosition;
 	FVector end = start + (GetActorUpVector() * 100);
-	FVector halfSize{ TileSize.X * 0.4, TileSize.Y * 0., 5 };
+	FVector halfSize{ TileSize.X * 0.5, TileSize.Y * 0.5, 10 };
 	FRotator orientation = GetActorRotation();
 	//ECollisionChannel blockersChannel = ECollisionChannel::ECC_WorldStatic;
 	TArray<AActor*> actorsToIgnore;
@@ -91,13 +89,6 @@ void AAntGrid::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	for (GridTile* tile : Tiles)
-	{
-		if (tile->HasPheromones())
-		{
-			tile->DecayPheromones(DeltaTime);
-		}
-	}
 }
 
 GridTile* AAntGrid::GetClosestTile(FVector queryPosition)
