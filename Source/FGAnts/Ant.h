@@ -6,6 +6,9 @@
 #include "GameFramework/Actor.h"
 #include "Ant.generated.h"
 
+class AAntGrid;
+class GridTile;
+
 UCLASS()
 class FGANTS_API AAnt : public AActor
 {
@@ -25,7 +28,7 @@ public:
 	bool BIsCenteredOnTile{ false };
 
 	UPROPERTY(BlueprintReadWrite)
-	int ClosestGridTileIndex{ 0 }; // replace with pointer to actual tile for faster access
+	GridTile* ClosestGridTile; // replace with pointer to actual tile for faster access
 
 	UPROPERTY(BlueprintReadWrite)
 	FVector CurrentDestination;
@@ -36,6 +39,9 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	UPROPERTY(BlueprintReadOnly)
+	AAntGrid* Grid;
 
 public:	
 	// Called every frame

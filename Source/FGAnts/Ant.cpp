@@ -2,6 +2,8 @@
 
 
 #include "Ant.h"
+#include "AntGrid.h"
+#include "AntTile.h"
 
 // Sets default values
 AAnt::AAnt()
