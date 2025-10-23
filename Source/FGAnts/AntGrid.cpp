@@ -7,6 +7,9 @@
 #include "DrawDebugHelpers.h"
 #include "AntGameState.h"
 
+DEFINE_LOG_CATEGORY(LogAntGrid);
+
+
 AAntGrid::AAntGrid()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
@@ -18,11 +21,12 @@ AAntGrid::AAntGrid()
 void AAntGrid::InitializeGrid()
 {
 	FVector origin = GetActorLocation() + (FVector(TileSize.X, TileSize.Y, 0) * 0.5f);
-	//FRotator spawnRotation = GetActorRotation();
+	UE_LOG(LogAntGrid, Display, TEXT("starting grid at origin point %s"), *origin.ToString());
+	
 
-	for (int x = 0; x < GridSize.X ; x++)
+	for (int y = 0; y < GridSize.Y; y++)
 	{
-		for (int y = 0; y < GridSize.Y; y++)
+		for (int x = 0; x < GridSize.X; x++)
 		{
 			FVector spawnLocation = FVector(origin.X + (x * TileSize.X), origin.Y + (y * TileSize.Y), origin.Z);
 			//FActorSpawnParameters spawnParams;
@@ -40,7 +44,8 @@ void AAntGrid::InitializeGrid()
 				DrawDebugBox(GetWorld(), spawnLocation, FVector(TileSize.X * 0.4, TileSize.Y * 0.4, 2), FColor::Red, true, -1, 0, 10);
 			}
 
-			Tiles.Add(new GridTile(spawnLocation, FIntVector2(x, y), bIsTraversable));
+			Tiles.Add(new GridTile(spawnLocation, FIntVector2( x, y), bIsTraversable));
+			UE_LOG(LogAntGrid, Display, TEXT("Initializing tile %d at coord (%d,%d), at location %s"), (Tiles.Num() - 1), x, y, *spawnLocation.ToString());
 
 		}
 
@@ -118,16 +123,25 @@ void AAntGrid::Tick(float DeltaTime)
 
 GridTile* AAntGrid::GetClosestTile(FVector queryPosition)
 {
+	// IMPORTANT NOTE FOR FUTURE B: YES  OF COURSE THE ORDER THAT Y AND X ARE LOOPED THROUGH TO PACK THE GRID INTO THE ARRAY MATTER 
+	// THIS ONE IS FOR OUTER LOOP Y INNER LOOP X
+	// IF YOU SWAP THIS ORDER YOU NEED TO SWIZZLE THE X AND Y WHEN YOU READ IN WORLD POSITIONS 
+	// AND WHEN YOU SAVE THE CELL COORDS TO THE TILE
+	FVector origin = GetActorLocation() + (FVector(TileSize.X, TileSize.Y, 0) * 0.5f);
+
 	FVector2D closestTilePos = FVector2D(
-		(TileSize.X / 2) + TileSize.X * floorf(queryPosition.X / TileSize.X),
-		(TileSize.Y / 2) + TileSize.Y * floorf(queryPosition.Y / TileSize.Y));
-//		queryPosition.Z);
+		(TileSize.X / 2) + TileSize.X * FMath::Floor(queryPosition.X / TileSize.X),
+		(TileSize.Y / 2) + TileSize.Y * FMath::Floor(queryPosition.Y / TileSize.Y)
+		);
 	
-	int32 x = GridSize.X + 0.5f - (closestTilePos.X / TileSize.X);
-	int32 y = GridSize.Y + 0.5f - (closestTilePos.Y / TileSize.Y);
+	int32 x = (closestTilePos.X - origin.X) / TileSize.X;//GridSize.X + 0.5f - (closestTilePos.X / TileSize.X);
+	int32 y = (closestTilePos.Y - origin.Y) / TileSize.Y;//GridSize.Y + 0.5f - (closestTilePos.Y / TileSize.Y);
 
 	// y * gridWidth + x = array index of point (x,y)
+	int index = y * GridSize.X + x;
 
+	//UE_LOG(LogAntGrid, Display, TEXT("looking for tile index %d from generated coord (%d,%d), at location %s."), index, x, y, *queryPosition.ToString());
+	if (!Tiles.IsValidIndex(index)) return new GridTile();
 
 	return Tiles[y * GridSize.X + x];
 }

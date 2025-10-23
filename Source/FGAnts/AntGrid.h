@@ -6,6 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "AntGrid.generated.h"
 
+DECLARE_LOG_CATEGORY_EXTERN(LogAntGrid, Log, All);
+
 class GridTile;
 struct NeighborCoords
 {
