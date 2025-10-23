@@ -35,14 +35,7 @@ void AAntGrid::InitializeGrid()
 			//newTile->halfWidth = TileSize.X * 0.5;
 			//newTile->halfHeight = TileSize.Y * 0.5;
 			bool bIsTraversable = IsTileTraversable(spawnLocation);
-			if (bIsTraversable)
-			{
-				DrawDebugBox(GetWorld(), spawnLocation, FVector(TileSize.X * 0.4, TileSize.Y * 0.4, 2), FColor::Emerald, true, -1, 0, 10);
-			}
-			else
-			{
-				DrawDebugBox(GetWorld(), spawnLocation, FVector(TileSize.X * 0.4, TileSize.Y * 0.4, 2), FColor::Red, true, -1, 0, 10);
-			}
+			
 
 			Tiles.Add(new GridTile(spawnLocation, FIntVector2( x, y), bIsTraversable));
 			UE_LOG(LogAntGrid, Display, TEXT("Initializing tile %d at coord (%d,%d), at location %s"), (Tiles.Num() - 1), x, y, *spawnLocation.ToString());
@@ -117,7 +110,22 @@ void AAntGrid::Tick(float DeltaTime)
 		if (tile->HasPheromones())
 		{
 			tile->DecayPheromones(DeltaTime);
+			FString debugText = FString::SanitizeFloat(tile->GetPheromoneAmount(EPheromoneTypes::Home));
+			DrawDebugString(GetWorld(), tile->GetCenterPosition() + FVector(5, 0, 0), debugText, nullptr, FColor::Green, DeltaTime, true);
+
+			FString debugTextFood = FString::SanitizeFloat(tile->GetPheromoneAmount(EPheromoneTypes::Food));
+			DrawDebugString(GetWorld(), tile->GetCenterPosition() + FVector(-5, 0, 0), debugTextFood, nullptr, FColor::Blue, DeltaTime, true);
 		}
+
+		if (tile->IsTraversable())
+		{
+			DrawDebugBox(GetWorld(), tile->GetCenterPosition(), FVector(TileSize.X * 0.4, TileSize.Y * 0.4, 2), FColor::Emerald, false, -1, 0, 10);
+		}
+		else
+		{
+			DrawDebugBox(GetWorld(), tile->GetCenterPosition(), FVector(TileSize.X * 0.4, TileSize.Y * 0.4, 2), FColor::Red, false, -1, 0, 10);
+		}
+
 	}
 }
 

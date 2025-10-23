@@ -5,14 +5,15 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "PheromoneTypes.h"
+#include "InitializeAfterGrid.h"
 #include "Ant.generated.h"
 
 class AAntGrid;
 class GridTile;
-
+class USphereComponent;
 
 UCLASS()
-class FGANTS_API AAnt : public AActor
+class FGANTS_API AAnt : public AActor/*, public IInitializeAfterGrid*/
 {
 	GENERATED_BODY()
 	
@@ -44,6 +45,9 @@ public:
 	UPROPERTY(BlueprintReadWrite)
 	UStaticMeshComponent* AntMesh{ nullptr };
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	USphereComponent* InteractionSphere;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -71,8 +75,12 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	void SetNextHighDestination(EPheromoneTypes typeToSeek, EPheromoneTypes typeToAvoid);
+	void SetNextLowDestination(EPheromoneTypes typeToSeek, EPheromoneTypes typeToAvoid);
+	void SetNextDestinationRandom(TArray<GridTile*>& neighbors);
+
 	UFUNCTION(BlueprintCallable)
-	void SeekFood();
+	bool SeekFood();
 
 	UFUNCTION(BlueprintCallable)
 	void PickUpFood();
@@ -81,9 +89,10 @@ public:
 	void GiveFood();
 
 	UFUNCTION(BlueprintCallable)
-	void SeekHome();
+	bool SeekHome();
 
 	UFUNCTION(BlueprintCallable)
 	void MoveToDestination(float deltaTime);
 
+	//virtual void InitializeWithGrid(AAntGrid* antGrid) override;
 };

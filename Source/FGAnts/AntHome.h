@@ -4,10 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "InitializeAfterGrid.h"
 #include "AntHome.generated.h"
 
 UCLASS()
-class FGANTS_API AAntHome : public AActor
+class FGANTS_API AAntHome : public AInitializeAfterGrid
 {
 	GENERATED_BODY()
 	

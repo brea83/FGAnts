@@ -2,6 +2,8 @@
 
 
 #include "AntHome.h"
+#include "AntGrid.h"
+#include "GridTile.h"
 
 // Sets default values
 AAntHome::AAntHome()
@@ -22,6 +24,22 @@ void AAntHome::BeginPlay()
 void AAntHome::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	if (_bWaitingForGrid)
+	{
+		if (!TryInitialize()) return;
+	}
 
+	float homeStrength = _currentTile->GetPheromoneAmount(EPheromoneTypes::Home);
+	if (homeStrength < 0)
+	{
+		_currentTile->AddPheromoneAmount(EPheromoneTypes::Home, DeltaTime );
+
+		TArray<GridTile*> neighbors = _grid->GetNeighborTiles(_currentTile);
+
+		for (GridTile* tile : neighbors)
+		{
+			tile->AddPheromoneAmount(EPheromoneTypes::Home, DeltaTime );
+		}
+	}
 }
 

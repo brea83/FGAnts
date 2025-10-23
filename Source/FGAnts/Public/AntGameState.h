@@ -17,6 +17,8 @@ class FGANTS_API AAntGameState : public AGameStateBase
 public:
 	void SetActiveGrid(AAntGrid* grid) { _activeGrid = grid; }
 	AAntGrid* GetActiveGrid() { return _activeGrid; }
+
 protected:
 	AAntGrid* _activeGrid{ nullptr };
+
 };
