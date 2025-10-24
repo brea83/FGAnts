@@ -67,17 +67,26 @@ void AFood::Tick(float DeltaTime)
 		if (!TryInitialize()) return;
 	}
 	
-	_currentTile->AddPheromoneAmount(EPheromoneTypes::Food, DeltaTime);
+	float foodStrength = _currentTile->GetPheromoneAmount(EPheromoneTypes::Food);
+	if (foodStrength < 2)
+	{
+		_currentTile->AddPheromoneAmount(EPheromoneTypes::Food, DeltaTime);
+	}
+
 }
 
-void AFood::PickUp()
+bool AFood::PickUp()
 {
-	NumUsesRemaining--;
 
 	if (NumUsesRemaining <= 0)
 	{
 		_currentTile->Occupants.Remove(this);
+		_currentTile->ResetPheromone(EPheromoneTypes::Food);
 		Destroy();
+		return false;
 	}
+
+	NumUsesRemaining--;
+	return true;
 }
 

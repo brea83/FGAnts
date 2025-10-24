@@ -46,6 +46,6 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	UFUNCTION(BlueprintCallable)
-	void PickUp();
+	bool PickUp();
 
 };

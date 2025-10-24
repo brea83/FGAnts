@@ -30,7 +30,15 @@ class FGANTS_API AAntGrid : public AActor
 public:
 	AAntGrid();
 	void InitializeGrid();
-	
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	bool ShowFoodDebug{ false };
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float PheromoneDecaySpeed{ 0.5f };
+
+	//UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	//bool ShowHomeDebug{ false };
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FVector2D GridSize{ 10, 10 };
 

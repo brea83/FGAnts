@@ -25,7 +25,7 @@ AAnt::AAnt()
 void AAnt::BeginPlay()
 {
 	Super::BeginPlay();
-	_pheromoneRemaining = _pheromoneCapacity;
+	
 }
 
 bool AAnt::TryInitialize()
@@ -48,6 +48,8 @@ bool AAnt::TryInitialize()
 
 	if (_currentTile != nullptr)
 	{
+		_remainingDistance = _maxMoves *( (_grid->TileSize.X + _grid->TileSize.Y)/2);
+
 		_currentTile->Occupants.Add(this);
 		CurrentDestination = _currentTile->GetCenterPosition();
 		_traversedTiles.AddUnique(_currentTile);
@@ -59,11 +61,26 @@ bool AAnt::TryInitialize()
 	
 }
 
-float AAnt::DepositPheromone(EPheromoneTypes pheromone)
+void AAnt::DepositPheromone(EPheromoneTypes pheromone)
 {
-	_currentTile->AddPheromoneAmount(pheromone, PheromoneStrength);
+	float depositedPheromone{ 0 };
+
+	switch (pheromone)
+	{
+	case EPheromoneTypes::Home:
+		depositedPheromone = PheromoneStrength / _traversedTiles.Num();
+		break;
+	case EPheromoneTypes::Food:
+		depositedPheromone = PheromoneStrength / _PathLengthToFood;
+		break;
+	case EPheromoneTypes::Danger:
+		depositedPheromone = PheromoneStrength;
+		break;
+	default:
+		break;
+	}
 	
-	return _pheromoneRemaining - PheromoneStrength;
+	_currentTile->AddPheromoneAmount(pheromone, depositedPheromone);
 }
 
 // Called every frame
@@ -84,22 +101,22 @@ void AAnt::Tick(float DeltaTime)
 			bool foundHome = SeekHome();
 			if (foundHome)
 			{
-				_pheromoneRemaining = DepositPheromone(EPheromoneTypes::Home);
-				_pheromoneRemaining = _pheromoneCapacity;
+				//DepositPheromone(EPheromoneTypes::Home);
+				_remainingDistance = _maxMoves * ((_grid->TileSize.X + _grid->TileSize.Y) / 2);
 			}
 			else
 			{
-				_pheromoneRemaining = DepositPheromone(EPheromoneTypes::Food);
+				DepositPheromone(EPheromoneTypes::Food);
 			}
 			_bIsCenteredOnTile = false;
 		}
-		else if(_pheromoneRemaining < PheromoneStrength)
+		else if(_remainingDistance < 1 * ((_grid->TileSize.X + _grid->TileSize.Y) / 2))
 		{ 
 			bool foundHome = SeekHome();
 			if (foundHome)
 			{
-				_pheromoneRemaining = DepositPheromone(EPheromoneTypes::Home);
-				_pheromoneRemaining = _pheromoneCapacity;
+				//DepositPheromone(EPheromoneTypes::Home);
+				_remainingDistance = _maxMoves * ((_grid->TileSize.X + _grid->TileSize.Y) / 2);
 			}
 
 			_bIsCenteredOnTile = false;
@@ -109,11 +126,13 @@ void AAnt::Tick(float DeltaTime)
 			bool foundFood = SeekFood();
 			if (foundFood)
 			{
-				_pheromoneRemaining = DepositPheromone(EPheromoneTypes::Food);
+				
+				_PathLengthToFood = FMath::Max<int>(1, _traversedTiles.Num());
+				 DepositPheromone(EPheromoneTypes::Food);
 			}
 			else
 			{
-				_pheromoneRemaining = DepositPheromone(EPheromoneTypes::Home);
+				 //DepositPheromone(EPheromoneTypes::Home);
 			}
 			_bIsCenteredOnTile = false;
 		}
@@ -161,9 +180,15 @@ void AAnt::SetNextDestination(EPheromoneTypes typeToSeek, EPheromoneTypes typeTo
 		}
 		validNeighbors.Add(tile);
 
+		// generate a random amount of curiosity interest in each neighbor to add to the desirability ratio
+		// this needs to be small enough to not Always sway ants onto a random path
+		float curiosityModifier = FMath::RandRange(0.0f, 1.0f);
+
 		float currentSoughtAmount = tile->GetPheromoneAmount(typeToSeek);
 		float currentAvoidAmount = tile->GetPheromoneAmount(typeToAvoid);
 		desirabilityRatio = currentAvoidAmount > 0 ? currentSoughtAmount / currentAvoidAmount : currentSoughtAmount;
+
+		desirabilityRatio += curiosityModifier;
 
 		float distanceWeight = FVector::DistSquared(GetActorLocation(), tile->GetCenterPosition()) * 0.0001f;
 
@@ -208,7 +233,7 @@ void AAnt::SetNextDestinationRandom(TArray<GridTile*>& neighbors, bool doubleChe
 	if (neighbors.IsEmpty())
 	{
 		// no valid neighbors, set pheromones empty and return home
-		_pheromoneRemaining = 0;
+		_remainingDistance = 0;
 		if (_traversedTiles.IsEmpty()) return;
 
 		CurrentDestination = _traversedTiles.Pop()->GetCenterPosition();
@@ -268,8 +293,16 @@ bool AAnt::SeekFood()
 		return false;
 	}
 	
-	foundFood->PickUp();
+	bool gotFood = foundFood->PickUp();
+
+	if (!gotFood)
+	{
+		SetNextDestination(EPheromoneTypes::Food, EPheromoneTypes::Danger);
+		return false;
+	}
+
 	PickUpFood();
+	 
 	SetNextDestination(EPheromoneTypes::Home, EPheromoneTypes::Danger);
 	return true;
 }
@@ -298,25 +331,26 @@ bool AAnt::SeekHome()
 		}
 	}
 
-	if (homeFound == nullptr)
+	if (homeFound != nullptr)
 	{
-		// traverse back along own path which is an array that doesn't decay, representing a unique pheromone per ant
-		if (_traversedTiles.IsEmpty())
-		{
-			TArray<GridTile*> neighbors = _grid->GetNeighborTiles(_currentTile);
-			SetNextDestinationRandom(neighbors, true);
-			return false;
-		}
-		CurrentDestination = _traversedTiles.Pop()->GetCenterPosition();
+		//tell home to do thing
+		GiveFood();
+		SetNextDestination(EPheromoneTypes::Food, EPheromoneTypes::Danger);
+
+		return true;
 		
-		return false;
 	}
 
-	//tell home to do thing
-	GiveFood();
-	SetNextDestination(EPheromoneTypes::Food, EPheromoneTypes::Danger);
+	// traverse back along own path which is an array that doesn't decay, representing a unique pheromone per ant
+	if (_traversedTiles.IsEmpty())
+	{
+		TArray<GridTile*> neighbors = _grid->GetNeighborTiles(_currentTile);
+		SetNextDestinationRandom(neighbors, true);
+		return false;
+	}
+	CurrentDestination = _traversedTiles.Pop()->GetCenterPosition();
 
-	return true;
+	return false;
 }
 
 void AAnt::MoveToDestination(float deltaTime)
@@ -336,34 +370,8 @@ void AAnt::MoveToDestination(float deltaTime)
 	}
 
 	SetActorLocation(newLocation);
-	_distanceTraveled += FVector::Distance(currentLocation, newLocation);
+	float moveDistance = FVector::Distance(currentLocation, newLocation);
+	_distanceTraveled += moveDistance;
+	_remainingDistance -= moveDistance;
 	_bIsCenteredOnTile = false;
 }
-//void AAnt::InitializeWithGrid(AAntGrid* antGrid)
-//{
-//	if (antGrid == nullptr)
-//	{
-//		_bWaitingForGrid = true;
-//		return;
-//	}
-//
-//	_grid = antGrid;
-//
-//	_currentTile = _grid->GetClosestTile(GetActorLocation());
-//
-//	if (_currentTile != nullptr)
-//	{
-//		_currentTile->Occupants.Add(this);
-//		CurrentDestination = _currentTile->GetCenterPosition();
-//		_bWaitingForGrid = false;
-//		return;
-//	}
-//
-//	_bWaitingForGrid = true;
-//}
-//
-//void AAnt::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-//{
-//	AFood* food = Cast<AFood>(OtherActor);
-//}
-

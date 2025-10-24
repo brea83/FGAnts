@@ -40,6 +40,7 @@ public: // functions
 	void AddPheromoneAmount(EPheromoneTypes pheromone, float amount);
 
 	void DecayPheromones(float DeltaTime);
+	void ResetPheromone(EPheromoneTypes pheromoneToReset);
 
 	const FIntVector2 GetCoord() const { return _coord; }
 	const FVector GetCenterPosition() const { return _centerPosition; }

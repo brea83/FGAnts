@@ -75,9 +75,10 @@ protected:
 	float _tileDistanceThreshold{ 25 };
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float _pheromoneCapacity{ 20 };
-	float _pheromoneRemaining{ 20 };
-	float DepositPheromone(EPheromoneTypes pheromone);
+	float _maxMoves{ 20 };
+	float _remainingDistance{ 20 };
+	int _PathLengthToFood{ 1 };
+	void DepositPheromone(EPheromoneTypes pheromone);
 
 	TArray<GridTile*> _traversedTiles;
 	
