@@ -67,7 +67,7 @@ void AFood::Tick(float DeltaTime)
 		if (!TryInitialize()) return;
 	}
 	
-	_currentTile->AddPheromoneAmount(EPheromoneTypes::Food, DeltaTime * 2);
+	_currentTile->AddPheromoneAmount(EPheromoneTypes::Food, DeltaTime);
 }
 
 void AFood::PickUp()

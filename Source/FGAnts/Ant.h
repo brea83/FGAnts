@@ -22,6 +22,9 @@ public:
 	AAnt();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool PrintDebug{ false };
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float MoveSpeed{ 1.0f };
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -71,13 +74,21 @@ protected:
 
 	float _tileDistanceThreshold{ 25 };
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float _pheromoneCapacity{ 20 };
+	float _pheromoneRemaining{ 20 };
+	float DepositPheromone(EPheromoneTypes pheromone);
+
+	TArray<GridTile*> _traversedTiles;
+	
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	void SetNextHighDestination(EPheromoneTypes typeToSeek, EPheromoneTypes typeToAvoid);
-	void SetNextLowDestination(EPheromoneTypes typeToSeek, EPheromoneTypes typeToAvoid);
-	void SetNextDestinationRandom(TArray<GridTile*>& neighbors);
+	void SetNextDestination(EPheromoneTypes typeToSeek, EPheromoneTypes typeToAvoid);
+	//void SetNextLowDestination(EPheromoneTypes typeToSeek, EPheromoneTypes typeToAvoid);
+	void SetNextDestinationRandom(TArray<GridTile*>& neighbors, bool doubleCheckTraversable = false);
 
 	UFUNCTION(BlueprintCallable)
 	bool SeekFood();

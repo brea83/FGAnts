@@ -18,12 +18,14 @@ AAnt::AAnt()
 	InteractionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("Interaction Range"));
 	InteractionSphere->SetCollisionProfileName(TEXT("Pawn"));
 	InteractionSphere->InitSphereRadius(40.0f);
+	InteractionSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 // Called when the game starts or when spawned
 void AAnt::BeginPlay()
 {
 	Super::BeginPlay();
+	_pheromoneRemaining = _pheromoneCapacity;
 }
 
 bool AAnt::TryInitialize()
@@ -48,12 +50,20 @@ bool AAnt::TryInitialize()
 	{
 		_currentTile->Occupants.Add(this);
 		CurrentDestination = _currentTile->GetCenterPosition();
+		_traversedTiles.AddUnique(_currentTile);
 		_bWaitingForGrid = false;
 		return true;
 	}
 
 	return false;
 	
+}
+
+float AAnt::DepositPheromone(EPheromoneTypes pheromone)
+{
+	_currentTile->AddPheromoneAmount(pheromone, PheromoneStrength);
+	
+	return _pheromoneRemaining - PheromoneStrength;
 }
 
 // Called every frame
@@ -74,12 +84,24 @@ void AAnt::Tick(float DeltaTime)
 			bool foundHome = SeekHome();
 			if (foundHome)
 			{
-				_currentTile->AddPheromoneAmount(EPheromoneTypes::Home, PheromoneStrength);
+				_pheromoneRemaining = DepositPheromone(EPheromoneTypes::Home);
+				_pheromoneRemaining = _pheromoneCapacity;
 			}
 			else
 			{
-				_currentTile->AddPheromoneAmount(EPheromoneTypes::Food, PheromoneStrength);
+				_pheromoneRemaining = DepositPheromone(EPheromoneTypes::Food);
 			}
+			_bIsCenteredOnTile = false;
+		}
+		else if(_pheromoneRemaining < PheromoneStrength)
+		{ 
+			bool foundHome = SeekHome();
+			if (foundHome)
+			{
+				_pheromoneRemaining = DepositPheromone(EPheromoneTypes::Home);
+				_pheromoneRemaining = _pheromoneCapacity;
+			}
+
 			_bIsCenteredOnTile = false;
 		}
 		else
@@ -87,11 +109,11 @@ void AAnt::Tick(float DeltaTime)
 			bool foundFood = SeekFood();
 			if (foundFood)
 			{
-				_currentTile->AddPheromoneAmount(EPheromoneTypes::Food, PheromoneStrength);
+				_pheromoneRemaining = DepositPheromone(EPheromoneTypes::Food);
 			}
 			else
 			{
-				_currentTile->AddPheromoneAmount(EPheromoneTypes::Home, PheromoneStrength);
+				_pheromoneRemaining = DepositPheromone(EPheromoneTypes::Home);
 			}
 			_bIsCenteredOnTile = false;
 		}
@@ -109,12 +131,13 @@ void AAnt::Tick(float DeltaTime)
 				_currentTile->Occupants.Remove(this);
 				closestTile->Occupants.Add(this);
 				_currentTile = closestTile;
+				_traversedTiles.AddUnique(_currentTile);
 			}
 		}
 	}
 }
 
-void AAnt::SetNextHighDestination(EPheromoneTypes typeToSeek, EPheromoneTypes typeToAvoid)
+void AAnt::SetNextDestination(EPheromoneTypes typeToSeek, EPheromoneTypes typeToAvoid)
 {
 	TArray<GridTile*> neighbors = _grid->GetNeighborTiles(_currentTile);
 
@@ -126,16 +149,32 @@ void AAnt::SetNextHighDestination(EPheromoneTypes typeToSeek, EPheromoneTypes ty
 	GridTile* lowestAvoidTile{ nullptr };
 	float lowestAvoidAmount{ FLT_MAX };
 
+	float desirabilityRatio{ 0 };
+	TArray<GridTile*> validNeighbors;
+
 	for (GridTile* tile : neighbors)
 	{
-		float currentSoughtAmount = tile->GetPheromoneAmount(typeToSeek);
-		if (currentSoughtAmount >= highestSoughtAmount)
+		//remove already visited neighbors.
+		if (_traversedTiles.Contains(tile) || !tile->IsTraversable())
 		{
-			highestSoughtAmount = currentSoughtAmount;
+			continue;
+		}
+		validNeighbors.Add(tile);
+
+		float currentSoughtAmount = tile->GetPheromoneAmount(typeToSeek);
+		float currentAvoidAmount = tile->GetPheromoneAmount(typeToAvoid);
+		desirabilityRatio = currentAvoidAmount > 0 ? currentSoughtAmount / currentAvoidAmount : currentSoughtAmount;
+
+		float distanceWeight = FVector::DistSquared(GetActorLocation(), tile->GetCenterPosition()) * 0.0001f;
+
+		desirabilityRatio /= distanceWeight;
+
+		if (desirabilityRatio > highestSoughtAmount)
+		{
+			highestSoughtAmount = desirabilityRatio;
 			highestSoughtTile = tile;
 		}
 
-		float currentAvoidAmount = tile->GetPheromoneAmount(typeToAvoid);
 		if (currentAvoidAmount <= lowestAvoidAmount && currentAvoidAmount > 0)
 		{
 			lowestAvoidAmount = currentAvoidAmount;
@@ -146,6 +185,10 @@ void AAnt::SetNextHighDestination(EPheromoneTypes typeToSeek, EPheromoneTypes ty
 
 	if (highestSoughtTile != nullptr)
 	{
+		if (GEngine && PrintDebug)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Magenta, FString::Printf(TEXT("Desireability: %f"), highestSoughtAmount/*, distanceWeight*/));
+		}
 		CurrentDestination = highestSoughtTile->GetCenterPosition();
 		return;
 	}
@@ -157,63 +200,51 @@ void AAnt::SetNextHighDestination(EPheromoneTypes typeToSeek, EPheromoneTypes ty
 	}
 
 	// if no tiles have pheromone data get a random neighbor
-	SetNextDestinationRandom(neighbors);
+	SetNextDestinationRandom(validNeighbors);
 }
 
-void AAnt::SetNextLowDestination(EPheromoneTypes typeToSeek, EPheromoneTypes typeToAvoid)
+void AAnt::SetNextDestinationRandom(TArray<GridTile*>& neighbors, bool doubleCheckTraversable)
 {
-	TArray<GridTile*> neighbors = _grid->GetNeighborTiles(_currentTile);
-
-	if (neighbors.Num() <= 0) return;
-
-	GridTile* lowestSoughtTile{ nullptr };
-	float lowestSoughtAmount{ FLT_MAX };
-
-	GridTile* lowestAvoidTile{ nullptr };
-	float lowestAvoidAmount{ FLT_MAX };
-
-	for (GridTile* tile : neighbors)
+	if (neighbors.IsEmpty())
 	{
-		float currentSoughtAmount = tile->GetPheromoneAmount(typeToSeek);
-		if (currentSoughtAmount <= lowestSoughtAmount && currentSoughtAmount > 0)
+		// no valid neighbors, set pheromones empty and return home
+		_pheromoneRemaining = 0;
+		if (_traversedTiles.IsEmpty()) return;
+
+		CurrentDestination = _traversedTiles.Pop()->GetCenterPosition();
+		return;
+	}
+
+	if (doubleCheckTraversable)
+	{
+		TArray<GridTile*> validNeighbors;
+
+		for (GridTile* tile : neighbors)
 		{
-			lowestSoughtAmount = currentSoughtAmount;
-			lowestSoughtTile = tile;
+			if (!tile->IsTraversable())
+			{
+				continue;
+			}
+			validNeighbors.Add(tile);
 		}
 
-		float currentAvoidAmount = tile->GetPheromoneAmount(typeToAvoid);
-		if (currentAvoidAmount <= lowestAvoidAmount && currentAvoidAmount > 0)
+		int random = FMath::RandHelper(validNeighbors.Num() - 1);
+		if (validNeighbors.IsValidIndex(random))
 		{
-			lowestAvoidAmount = currentAvoidAmount;
-			lowestAvoidTile = tile;
+			CurrentDestination = validNeighbors[random]->GetCenterPosition();
+			return;
 		}
-
 	}
-
-	if (lowestSoughtTile != nullptr)
+	else
 	{
-		CurrentDestination = lowestSoughtTile->GetCenterPosition();
-		return;
+		int random = FMath::RandHelper(neighbors.Num() - 1);
+		if (neighbors.IsValidIndex(random))
+		{
+			CurrentDestination = neighbors[random]->GetCenterPosition();
+			return;
+		}
 	}
 
-	if (lowestAvoidTile != nullptr)
-	{
-		CurrentDestination = lowestAvoidTile->GetCenterPosition();
-		return;
-	}
-
-	// if no tiles have pheromone data get a random neighbor
-	SetNextDestinationRandom(neighbors);
-}
-
-void AAnt::SetNextDestinationRandom(TArray<GridTile*>& neighbors)
-{
-	int random = FMath::RandHelper(neighbors.Num() - 1);
-	if (neighbors.IsValidIndex(random))
-	{
-		CurrentDestination = neighbors[random]->GetCenterPosition();
-		return;
-	}
 	CurrentDestination = neighbors[0]->GetCenterPosition();
 }
 
@@ -233,13 +264,13 @@ bool AAnt::SeekFood()
 
 	if (foundFood == nullptr)
 	{
-		SetNextHighDestination(EPheromoneTypes::Food, EPheromoneTypes::Danger);
+		SetNextDestination(EPheromoneTypes::Food, EPheromoneTypes::Danger);
 		return false;
 	}
 	
 	foundFood->PickUp();
 	PickUpFood();
-	SetNextLowDestination(EPheromoneTypes::Home, EPheromoneTypes::Danger);
+	SetNextDestination(EPheromoneTypes::Home, EPheromoneTypes::Danger);
 	return true;
 }
 
@@ -269,13 +300,22 @@ bool AAnt::SeekHome()
 
 	if (homeFound == nullptr)
 	{
-		SetNextHighDestination(EPheromoneTypes::Home, EPheromoneTypes::Danger);
+		// traverse back along own path which is an array that doesn't decay, representing a unique pheromone per ant
+		if (_traversedTiles.IsEmpty())
+		{
+			TArray<GridTile*> neighbors = _grid->GetNeighborTiles(_currentTile);
+			SetNextDestinationRandom(neighbors, true);
+			return false;
+		}
+		CurrentDestination = _traversedTiles.Pop()->GetCenterPosition();
+		
 		return false;
 	}
 
 	//tell home to do thing
 	GiveFood();
-	SetNextHighDestination(EPheromoneTypes::Food, EPheromoneTypes::Danger);
+	SetNextDestination(EPheromoneTypes::Food, EPheromoneTypes::Danger);
+
 	return true;
 }
 
@@ -289,6 +329,7 @@ void AAnt::MoveToDestination(float deltaTime)
 	{
 		// I think the unreal units are small, 1 should be around a cm I think 
 		SetActorLocation(CurrentDestination);
+
 		_bIsCenteredOnTile = true;
 		_distanceTraveled = 0.0f;
 		return;

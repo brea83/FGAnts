@@ -39,7 +39,7 @@ void GridTile::AddPheromoneAmount(EPheromoneTypes pheromone, float amount)
 	{
 		amount += *oldAmount;
 	}
-	amount = FMath::Min(amount, 60.0f);
+	amount = FMath::Min(amount, 5.0f);
 	_pheromones.Add(pheromone, amount);
 	_bHasPheromones = true;
 }

@@ -109,21 +109,30 @@ void AAntGrid::Tick(float DeltaTime)
 	{
 		if (tile->HasPheromones())
 		{
-			tile->DecayPheromones(DeltaTime);
-			FString debugText = FString::SanitizeFloat(tile->GetPheromoneAmount(EPheromoneTypes::Home));
-			DrawDebugString(GetWorld(), tile->GetCenterPosition() + FVector(5, 0, 0), debugText, nullptr, FColor::Green, DeltaTime, true);
+			tile->DecayPheromones(DeltaTime * 0.1);
 
-			FString debugTextFood = FString::SanitizeFloat(tile->GetPheromoneAmount(EPheromoneTypes::Food));
-			DrawDebugString(GetWorld(), tile->GetCenterPosition() + FVector(-5, 0, 0), debugTextFood, nullptr, FColor::Blue, DeltaTime, true);
+			float homeAmount = tile->GetPheromoneAmount(EPheromoneTypes::Home);
+			if (homeAmount > 0)
+			{
+				FString debugText = FString::SanitizeFloat(homeAmount);
+				DrawDebugString(GetWorld(), tile->GetCenterPosition() + FVector(5, 0, 0), debugText, nullptr, FColor::Green, DeltaTime, true);
+			}
+
+			float foodAmount = tile->GetPheromoneAmount(EPheromoneTypes::Food);
+			if (foodAmount > 0)
+			{
+				FString debugTextFood = FString::SanitizeFloat(foodAmount);
+				DrawDebugString(GetWorld(), tile->GetCenterPosition() + FVector(-5, 0, 0), debugTextFood, nullptr, FColor::Blue, DeltaTime, true);
+			}
 		}
 
 		if (tile->IsTraversable())
 		{
-			DrawDebugBox(GetWorld(), tile->GetCenterPosition(), FVector(TileSize.X * 0.4, TileSize.Y * 0.4, 2), FColor::Emerald, false, -1, 0, 10);
+			DrawDebugBox(GetWorld(), tile->GetCenterPosition(), FVector(TileSize.X * 0.4, TileSize.Y * 0.4, 2), FColor::Emerald, false, DeltaTime * 2, 0, 10);
 		}
 		else
 		{
-			DrawDebugBox(GetWorld(), tile->GetCenterPosition(), FVector(TileSize.X * 0.4, TileSize.Y * 0.4, 2), FColor::Red, false, -1, 0, 10);
+			DrawDebugBox(GetWorld(), tile->GetCenterPosition(), FVector(TileSize.X * 0.4, TileSize.Y * 0.4, 2), FColor::Red, false, DeltaTime * 2, 0, 10);
 		}
 
 	}
