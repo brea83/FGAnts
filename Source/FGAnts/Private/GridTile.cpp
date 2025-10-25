@@ -39,7 +39,7 @@ void GridTile::AddPheromoneAmount(EPheromoneTypes pheromone, float amount)
 	{
 		amount += *oldAmount;
 	}
-	amount = FMath::Min(amount, 60.0f);
+	amount = FMath::Min(amount, 999.0f);
 	_pheromones.Add(pheromone, amount);
 	_bHasPheromones = true;
 }
@@ -52,7 +52,7 @@ void GridTile::DecayPheromones(float DeltaTime)
 
 	for (EPheromoneTypes key : keys)
 	{
-		float newValue = FMath::Min(*_pheromones.Find(key) - DeltaTime, 60.0f);
+		float newValue = FMath::Min(*_pheromones.Find(key) -DeltaTime, 999.0f);
 
 		if (newValue <= 0)
 		{

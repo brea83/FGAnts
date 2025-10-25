@@ -111,13 +111,13 @@ void AAntGrid::Tick(float DeltaTime)
 		{
 			tile->DecayPheromones(DeltaTime * PheromoneDecaySpeed);
 
-			//float homeAmount = tile->GetPheromoneAmount(EPheromoneTypes::Home);
-			/*if (ShowHomeDebug && homeAmount > 0)
+			float homeAmount = tile->GetPheromoneAmount(EPheromoneTypes::Home);
+			if (ShowHomeDebug && homeAmount > 0)
 			{
 				FString debugText = FString::SanitizeFloat(homeAmount);
 				
 				DrawDebugString(GetWorld(), tile->GetCenterPosition() + FVector(40, -20, 0), debugText.Left(3), nullptr, FColor::Green, DeltaTime, true);
-			}*/
+			}
 
 			float foodAmount = tile->GetPheromoneAmount(EPheromoneTypes::Food);
 			if (ShowFoodDebug && foodAmount > 0)

@@ -101,7 +101,7 @@ void AAnt::Tick(float DeltaTime)
 			bool foundHome = SeekHome();
 			if (foundHome)
 			{
-				//DepositPheromone(EPheromoneTypes::Home);
+				DepositPheromone(EPheromoneTypes::Home);
 				_remainingDistance = _maxMoves * ((_grid->TileSize.X + _grid->TileSize.Y) / 2);
 			}
 			else
@@ -115,7 +115,7 @@ void AAnt::Tick(float DeltaTime)
 			bool foundHome = SeekHome();
 			if (foundHome)
 			{
-				//DepositPheromone(EPheromoneTypes::Home);
+				DepositPheromone(EPheromoneTypes::Home);
 				_remainingDistance = _maxMoves * ((_grid->TileSize.X + _grid->TileSize.Y) / 2);
 			}
 
@@ -132,7 +132,7 @@ void AAnt::Tick(float DeltaTime)
 			}
 			else
 			{
-				 //DepositPheromone(EPheromoneTypes::Home);
+				 DepositPheromone(EPheromoneTypes::Home);
 			}
 			_bIsCenteredOnTile = false;
 		}
@@ -156,14 +156,25 @@ void AAnt::Tick(float DeltaTime)
 	}
 }
 
-void AAnt::SetNextDestination(EPheromoneTypes typeToSeek, EPheromoneTypes typeToAvoid)
+void AAnt::SetNextDestination(EPheromoneTypes typeToSeek, EPheromoneTypes typeToAvoid, bool bCompareToTraversedTile)
 {
 	TArray<GridTile*> neighbors = _grid->GetNeighborTiles(_currentTile);
 
 	if (neighbors.Num() <= 0) return;
 
-	GridTile* highestSoughtTile{ nullptr };
-	float highestSoughtAmount{ 0 };
+	GridTile* highestSoughtTile;
+	float highestSoughtAmount;
+	if (bCompareToTraversedTile && !( _traversedTiles.IsEmpty() ) )
+	{
+		highestSoughtTile = _traversedTiles.Pop();
+		highestSoughtAmount = highestSoughtTile->GetPheromoneAmount(typeToSeek);
+	}
+	else
+	{
+		highestSoughtTile = nullptr;
+		highestSoughtAmount =  0.0f ;
+	}
+
 
 	GridTile* lowestAvoidTile{ nullptr };
 	float lowestAvoidAmount{ FLT_MAX };
@@ -182,13 +193,13 @@ void AAnt::SetNextDestination(EPheromoneTypes typeToSeek, EPheromoneTypes typeTo
 
 		// generate a random amount of curiosity interest in each neighbor to add to the desirability ratio
 		// this needs to be small enough to not Always sway ants onto a random path
-		float curiosityModifier = FMath::RandRange(0.0f, 1.0f);
+		float curiosityModifier = FMath::RandRange(0.0f, 1.2f);
 
 		float currentSoughtAmount = tile->GetPheromoneAmount(typeToSeek);
 		float currentAvoidAmount = tile->GetPheromoneAmount(typeToAvoid);
 		desirabilityRatio = currentAvoidAmount > 0 ? currentSoughtAmount / currentAvoidAmount : currentSoughtAmount;
 
-		desirabilityRatio += curiosityModifier;
+		desirabilityRatio *= curiosityModifier;
 
 		float distanceWeight = FVector::DistSquared(GetActorLocation(), tile->GetCenterPosition()) * 0.0001f;
 
@@ -341,13 +352,16 @@ bool AAnt::SeekHome()
 		
 	}
 
-	// traverse back along own path which is an array that doesn't decay, representing a unique pheromone per ant
 	if (_traversedTiles.IsEmpty())
 	{
 		TArray<GridTile*> neighbors = _grid->GetNeighborTiles(_currentTile);
 		SetNextDestinationRandom(neighbors, true);
 		return false;
 	}
+	
+	//SetNextDestination(EPheromoneTypes::Food, EPheromoneTypes::Danger, true);
+
+	// traverse back along own path which is an array that doesn't decay, representing a unique pheromone per ant
 	CurrentDestination = _traversedTiles.Pop()->GetCenterPosition();
 
 	return false;

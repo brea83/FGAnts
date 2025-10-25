@@ -27,19 +27,20 @@ void AAntHome::Tick(float DeltaTime)
 	if (_bWaitingForGrid)
 	{
 		if (!TryInitialize()) return;
+		_currentTile->AddPheromoneAmount(EPheromoneTypes::Home, 100);
 	}
 
-	/*float homeStrength = _currentTile->GetPheromoneAmount(EPheromoneTypes::Home);
-	if (homeStrength < 0)
-	{
-		_currentTile->AddPheromoneAmount(EPheromoneTypes::Home, 2 );
+	//float homeStrength = _currentTile->GetPheromoneAmount(EPheromoneTypes::Home);
+	//if (homeStrength < 6000)
+	//{
+	//	_currentTile->AddPheromoneAmount(EPheromoneTypes::Home, 2 );
 
-		TArray<GridTile*> neighbors = _grid->GetNeighborTiles(_currentTile);
+	//	TArray<GridTile*> neighbors = _grid->GetNeighborTiles(_currentTile);
 
-		for (GridTile* tile : neighbors)
-		{
-			tile->AddPheromoneAmount(EPheromoneTypes::Home, 1 );
-		}
-	}*/
+	//	for (GridTile* tile : neighbors)
+	//	{
+	//		tile->AddPheromoneAmount(EPheromoneTypes::Home, 1 );
+	//	}
+	//}
 }
 

@@ -87,7 +87,7 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	void SetNextDestination(EPheromoneTypes typeToSeek, EPheromoneTypes typeToAvoid);
+	void SetNextDestination(EPheromoneTypes typeToSeek, EPheromoneTypes typeToAvoid, bool bCompareToTraversedTile = false);
 	//void SetNextLowDestination(EPheromoneTypes typeToSeek, EPheromoneTypes typeToAvoid);
 	void SetNextDestinationRandom(TArray<GridTile*>& neighbors, bool doubleCheckTraversable = false);
 

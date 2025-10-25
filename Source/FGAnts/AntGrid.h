@@ -36,8 +36,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	float PheromoneDecaySpeed{ 0.5f };
 
-	//UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	//bool ShowHomeDebug{ false };
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	bool ShowHomeDebug{ false };
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FVector2D GridSize{ 10, 10 };
